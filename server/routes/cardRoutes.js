@@ -33,6 +33,10 @@ router.put('/:cardId', authMiddleware, async (req, res) => {
       { list: req.body.list },
       { returnDocument: 'after' }
     )
+
+    const io = req.app.get('io')
+    io.to(req.body.boardId).emit('cardUpdated')
+
     res.json(updatedCard)
   } catch (error) {
     res.status(500).json({ error: error.message })

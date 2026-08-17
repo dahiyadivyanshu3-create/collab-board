@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
+import { io } from 'socket.io-client'
 import { DndContext, closestCenter } from '@dnd-kit/core'
-import { useDraggable, useDroppable } from '@dnd-kit/core' 
+import { useDraggable, useDroppable } from '@dnd-kit/core'
 
 function DraggableCard({ card }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -55,9 +56,23 @@ function Board() {
   const [newListTitle, setNewListTitle] = useState('')
 
   const token = localStorage.getItem('token')
+  const socketRef = useRef(null)
 
   useEffect(() => {
     fetchLists()
+  }, [id])
+
+  useEffect(() => {
+    socketRef.current = io('http://localhost:5000')
+    socketRef.current.emit('joinBoard', id)
+
+    socketRef.current.on('cardUpdated', () => {
+      fetchLists()
+    })
+
+    return () => {
+      socketRef.current.disconnect()
+    }
   }, [id])
 
   const fetchLists = async () => {
@@ -119,63 +134,64 @@ function Board() {
     }
   }
 
-const handleDragEnd = async (event) => {
-  const { active, over } = event
+  const handleDragEnd = async (event) => {
+    const { active, over } = event
 
-  if (!over) return
+    if (!over) return
 
-  const cardId = active.id
-  const newListId = over.id
+    const cardId = active.id
+    const newListId = over.id
 
-  try {
-    await axios.put(
-      `http://localhost:5000/api/cards/${cardId}`,
-      { list: newListId },
-      { headers: { Authorization: token } }
-    )
-    fetchLists()
-  } catch (error) {
-    console.log('Error moving card:', error)
+    try {
+      await axios.put(
+        `http://localhost:5000/api/cards/${cardId}`,
+        { list: newListId, boardId: id },
+        { headers: { Authorization: token } }
+      )
+      fetchLists()
+    } catch (error) {
+      console.log('Error moving card:', error)
+    }
   }
-}
 
   return (
-  <div style={{ padding: '20px' }}>
-    <h1>Board Page (ID: {id})</h1>
+    <div style={{ padding: '20px' }}>
+      <h1>Board Page (ID: {id})</h1>
 
-    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <div style={{ display: 'flex', gap: '16px' }}>
-        {lists.map((list) => (
-          <DroppableList key={list._id} list={list}>
-            {cardsByList[list._id] && cardsByList[list._id].map((card) => (
-              <DraggableCard key={card._id} card={card} />
-            ))}
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          {lists.map((list) => (
+            <DroppableList key={list._id} list={list}>
+              {cardsByList[list._id] && cardsByList[list._id].map((card) => (
+                <DraggableCard key={card._id} card={card} />
+              ))}
 
+              <input
+                type="text"
+                placeholder="New card text"
+                value={newCardText[list._id] || ''}
+                onChange={(e) => setNewCardText({ ...newCardText, [list._id]: e.target.value })}
+                style={{ width: '100%', padding: '6px', marginTop: '6px', boxSizing: 'border-box' }}
+              />
+              <button onClick={() => handleAddCard(list._id)} style={{ marginTop: '6px', width: '100%' }}>
+                + Add Card
+              </button>
+            </DroppableList>
+          ))}
+
+          <div style={{ padding: '10px' }}>
             <input
               type="text"
-              placeholder="New card text"
-              value={newCardText[list._id] || ''}
-              onChange={(e) => setNewCardText({ ...newCardText, [list._id]: e.target.value })}
-              style={{ width: '100%', padding: '6px', marginTop: '6px', boxSizing: 'border-box' }}
+              placeholder="New list title"
+              value={newListTitle}
+              onChange={(e) => setNewListTitle(e.target.value)}
             />
-            <button onClick={() => handleAddCard(list._id)} style={{ marginTop: '6px', width: '100%' }}>
-              + Add Card
-            </button>
-          </DroppableList>
-        ))}
-
-        <div style={{ padding: '10px' }}>
-          <input
-            type="text"
-            placeholder="New list title"
-            value={newListTitle}
-            onChange={(e) => setNewListTitle(e.target.value)}
-          />
-          <button onClick={handleAddList}>+ Add List</button>
+            <button onClick={handleAddList}>+ Add List</button>
+          </div>
         </div>
-      </div>
-    </DndContext>
-  </div>
-)}
+      </DndContext>
+    </div>
+  )
+}
 
 export default Board
