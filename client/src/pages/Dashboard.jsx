@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom'
 import axios from 'axios'
 
 function Dashboard() {
-  const[boards,setBoards]=useState([])
+  const [boards, setBoards] = useState([])
 
-useEffect(() => {
+  useEffect(() => {
     const fetchBoards = async () => {
       try {
         const token = localStorage.getItem('token')
-        const response = await axios.get('http://localhost:5000/api/boards', {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/boards`, {
           headers: { Authorization: token }
         })
         setBoards(response.data)
@@ -26,8 +26,8 @@ useEffect(() => {
       <h1>My Boards</h1>
       <ul>
         {boards.map((board) => (
-        <li key={board._id}>
-         <Link to={`/board/${board._id}`}>{board.title}</Link>
+          <li key={board._id}>
+            <Link to={`/board/${board._id}`}>{board.title}</Link>
           </li>
         ))}
       </ul>

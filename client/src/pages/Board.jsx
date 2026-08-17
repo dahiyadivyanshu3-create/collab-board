@@ -63,7 +63,7 @@ function Board() {
   }, [id])
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000')
+    socketRef.current = io(import.meta.env.VITE_API_URL)
     socketRef.current.emit('joinBoard', id)
 
     socketRef.current.on('cardUpdated', () => {
@@ -77,7 +77,7 @@ function Board() {
 
   const fetchLists = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/lists/${id}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/lists/${id}`, {
         headers: { Authorization: token }
       })
       setLists(response.data)
@@ -92,7 +92,7 @@ function Board() {
 
   const fetchCards = async (listId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/cards/${listId}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cards/${listId}`, {
         headers: { Authorization: token }
       })
       setCardsByList((prev) => ({ ...prev, [listId]: response.data }))
@@ -106,7 +106,7 @@ function Board() {
 
     try {
       await axios.post(
-        'http://localhost:5000/api/lists',
+        `${import.meta.env.VITE_API_URL}/api/lists`,
         { title: newListTitle, board: id },
         { headers: { Authorization: token } }
       )
@@ -123,7 +123,7 @@ function Board() {
 
     try {
       await axios.post(
-        'http://localhost:5000/api/cards',
+        `${import.meta.env.VITE_API_URL}/api/cards`,
         { text, list: listId },
         { headers: { Authorization: token } }
       )
@@ -144,7 +144,7 @@ function Board() {
 
     try {
       await axios.put(
-        `http://localhost:5000/api/cards/${cardId}`,
+        `${import.meta.env.VITE_API_URL}/api/cards/${cardId}`,
         { list: newListId, boardId: id },
         { headers: { Authorization: token } }
       )
@@ -156,7 +156,7 @@ function Board() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>Board Page (ID: {id})</h1>
+      <h1 style={{ fontSize: '20px', marginBottom: '20px' }}>Board Page (ID: {id})</h1>
 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div style={{ display: 'flex', gap: '16px' }}>
