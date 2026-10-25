@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate ,Link } from 'react-router-dom'
 import axios from 'axios'
+import { LayoutDashboard, Zap, Users, Lock, Monitor } from 'lucide-react'
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -8,6 +9,13 @@ function Login() {
   const [error, setError] = useState('')
 
   const navigate = useNavigate()
+
+  const features = [
+  { icon: Zap, label: 'Real-time collaboration' },
+  { icon: Users, label: 'Team friendly' },
+  { icon: Lock, label: 'Secure and reliable' },
+  { icon: Monitor, label: 'Access anywhere' },
+]
 
   const handleLogin = async () => {
     try {
@@ -25,9 +33,44 @@ function Login() {
 
   return (
     <div className='min-h-screen flex'>
-      <div className='hidden lg:flex w-1/2 bg-blue-50 items-center justify-center'>
-        leftside
+
+      {/* left side */}
+      <div className='hidden lg:flex w-1/2 bg-blue-50 flex-col px-16 justify-center'>
+       
+       <div className='max-w-md'>
+<div className="flex items-center gap-3">
+  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600">
+    <LayoutDashboard className="h-5 w-5 text-white" />
+  </div>
+  <span className="text-2xl font-semibold text-gray-900">CollabBoard</span>
+</div>
+
+<h2 className="mt-10 text-4xl font-bold leading-tight text-gray-900">
+  Plan. Collaborate. Build. Together.
+</h2>
+
+<p className="mt-4 text-gray-600">
+  A real-time collaborative board for teams, students and creators.
+  Organize your work, share ideas and get things done together.
+</p>
+
+<div className="mt-8 grid grid-cols-4 gap-4">
+  {features.map((f) => {
+    const Icon = f.icon
+    return (
+      <div key={f.label} className="flex flex-col items-center gap-2 text-center">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm">
+          <Icon className="h-5 w-5 text-indigo-600" />
+        </div>
+        <span className="text-xs text-gray-600">{f.label}</span>
       </div>
+    )
+  })}
+</div>
+  
+       </div>
+      </div>
+      {/* left side */}
       <div className='w-full lg:w-1/2 bg-white flex items-center justify-center'>
         <div className='w-full max-w-sm px-6'>
           <h1 className='text-2xl font-semibold text-gray-900'>Welcome Back</h1>
@@ -37,7 +80,7 @@ function Login() {
 
           <div className="mt-8 space-y-5">
             <div>
-              <label htmlFor="Email Address" className='block text-sm font-medium text-gray-700 mb-1.5'> Email Address</label>
+              <label htmlFor="email" className='block text-sm font-medium text-gray-700 mb-1.5'>Email Address</label>
               <input
                 type="email"
                 placeholder="you@example.com"
@@ -47,7 +90,7 @@ function Login() {
               />
             </div>
             <div>
-              <label htmlFor="password">Password</label>
+             <label htmlFor="password" className='block text-sm font-medium text-gray-700 mb-1.5'>Password</label>
               <input
 
                 type="password"
