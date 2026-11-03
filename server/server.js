@@ -4,6 +4,8 @@ const mongoose = require('mongoose')
 const http = require('http')
 const { Server } = require('socket.io')
 require('dotenv').config()
+const dns = require('dns')
+dns.setServers(['8.8.8.8', '1.1.1.1'])
 
 const authRoutes = require('./routes/authRoutes')
 const boardRoutes = require('./routes/boardRoutes')

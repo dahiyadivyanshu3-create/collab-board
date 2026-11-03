@@ -7,23 +7,33 @@ function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate()
 
-  const handleLogin = async () => {
-    try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/login`,
-        { email, password }
-      )
+  const handleLogin = async (e) => {
+  e.preventDefault()
+  setError('')
+  setLoading(true)
 
-      localStorage.setItem('token', response.data.token)
-      navigate('/dashboard')
-    } catch (err) {
-      setError('Login failed. Check your email/password.')
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/auth/login`,
+      { email, password }
+    )
+
+    localStorage.setItem('token', response.data.token)
+    navigate('/dashboard')
+  } catch (err) {
+    if (!err.response) {
+      setError('Cannot reach the server. It may be waking up, try again in a minute.')
+    } else {
+      setError('Login failed. Check your email and password.')
     }
+  } finally {
+    setLoading(false)
   }
-
+}
   return (
     <AuthLayout>
       <h1 className="text-2xl font-semibold text-gray-900">Welcome Back 👋</h1>

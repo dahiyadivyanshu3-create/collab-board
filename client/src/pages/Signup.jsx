@@ -9,10 +9,12 @@ function Signup() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate()
 
-  const handleSignup = async () => {
+  const handleSignup = async (e) => {
+    e.preventDefault()
     setError('')
 
     if (password !== confirmPassword) {
@@ -20,6 +22,7 @@ function Signup() {
       return
     }
 
+    setLoading(true)
     try {
       await axios.post(
         `${import.meta.env.VITE_API_URL}/api/auth/signup`,
@@ -28,7 +31,13 @@ function Signup() {
 
       navigate('/')
     } catch (err) {
-      setError('Signup failed. Try again.')
+      if (!err.response) {
+        setError('Cannot reach the server. It may be waking up, try again in a minute.')
+      } else {
+        setError('Signup failed. This email may already be registered.')
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -39,70 +48,77 @@ function Signup() {
         Start organizing your work with CollabBoard.
       </p>
 
-      <div className="mt-8 space-y-5">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+      <form onSubmit={handleSignup}>
+        <div className="mt-8 space-y-5">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              required
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              required
+              placeholder="Re-enter your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Email Address
-          </label>
-          <input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            placeholder="Create a password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Confirm Password
-          </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            placeholder="Re-enter your password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-      </div>
-
-      <button
-        onClick={handleSignup}
-        className="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
-      >
-        Create account
-      </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? 'Creating account...' : 'Create account'}
+        </button>
+      </form>
 
       {error && (
         <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

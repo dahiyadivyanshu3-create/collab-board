@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { io } from 'socket.io-client'
 import { DndContext, closestCenter } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
+import { ArrowLeft } from 'lucide-react'
 
 function DraggableCard({ card }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -40,7 +41,13 @@ function DroppableList({ list, children }) {
   return (
     <div
       ref={setNodeRef}
-      style={{ background: '#eee', padding: '10px', width: '220px', minHeight: '100px' }}
+      style={{
+        background: '#eee',
+        padding: '10px',
+        width: '220px',
+        minHeight: '100px',
+        flexShrink: 0
+      }}
     >
       <h3>{list.title}</h3>
       {children}
@@ -50,6 +57,7 @@ function DroppableList({ list, children }) {
 
 function Board() {
   const { id } = useParams()
+  const [board, setBoard] = useState(null)
   const [lists, setLists] = useState([])
   const [cardsByList, setCardsByList] = useState({})
   const [newCardText, setNewCardText] = useState({})
@@ -59,6 +67,7 @@ function Board() {
   const socketRef = useRef(null)
 
   useEffect(() => {
+    fetchBoard()
     fetchLists()
   }, [id])
 
@@ -75,11 +84,24 @@ function Board() {
     }
   }, [id])
 
+  const fetchBoard = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/boards/${id}`,
+        { headers: { Authorization: token } }
+      )
+      setBoard(response.data)
+    } catch (error) {
+      console.log('Error fetching board:', error)
+    }
+  }
+
   const fetchLists = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/lists/${id}`, {
-        headers: { Authorization: token }
-      })
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/lists/${id}`,
+        { headers: { Authorization: token } }
+      )
       setLists(response.data)
 
       response.data.forEach((list) => {
@@ -92,9 +114,10 @@ function Board() {
 
   const fetchCards = async (listId) => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cards/${listId}`, {
-        headers: { Authorization: token }
-      })
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/cards/${listId}`,
+        { headers: { Authorization: token } }
+      )
       setCardsByList((prev) => ({ ...prev, [listId]: response.data }))
     } catch (error) {
       console.log('Error fetching cards:', error)
@@ -155,41 +178,68 @@ function Board() {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1 style={{ fontSize: '20px', marginBottom: '20px' }}>Board Page (ID: {id})</h1>
+    <div className="min-h-screen bg-gray-50">
+      <header className="border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-4 px-6 py-3">
+          <Link
+            to="/dashboard"
+            className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Boards
+          </Link>
+          <span className="text-gray-300">/</span>
+          <h1 className="text-lg font-semibold text-gray-900">
+            {board ? board.title : 'Board'}
+          </h1>
+        </div>
+      </header>
 
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          {lists.map((list) => (
-            <DroppableList key={list._id} list={list}>
-              {cardsByList[list._id] && cardsByList[list._id].map((card) => (
-                <DraggableCard key={card._id} card={card} />
-              ))}
+      <main className="p-6">
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="flex items-start gap-4 overflow-x-auto pb-4">
+            {lists.map((list) => (
+              <DroppableList key={list._id} list={list}>
+                {cardsByList[list._id] &&
+                  cardsByList[list._id].map((card) => (
+                    <DraggableCard key={card._id} card={card} />
+                  ))}
 
+                <input
+                  type="text"
+                  placeholder="New card text"
+                  value={newCardText[list._id] || ''}
+                  onChange={(e) =>
+                    setNewCardText({ ...newCardText, [list._id]: e.target.value })
+                  }
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    marginTop: '6px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <button
+                  onClick={() => handleAddCard(list._id)}
+                  style={{ marginTop: '6px', width: '100%' }}
+                >
+                  + Add Card
+                </button>
+              </DroppableList>
+            ))}
+
+            <div className="shrink-0 p-2.5">
               <input
                 type="text"
-                placeholder="New card text"
-                value={newCardText[list._id] || ''}
-                onChange={(e) => setNewCardText({ ...newCardText, [list._id]: e.target.value })}
-                style={{ width: '100%', padding: '6px', marginTop: '6px', boxSizing: 'border-box' }}
+                placeholder="New list title"
+                value={newListTitle}
+                onChange={(e) => setNewListTitle(e.target.value)}
               />
-              <button onClick={() => handleAddCard(list._id)} style={{ marginTop: '6px', width: '100%' }}>
-                + Add Card
-              </button>
-            </DroppableList>
-          ))}
-
-          <div style={{ padding: '10px' }}>
-            <input
-              type="text"
-              placeholder="New list title"
-              value={newListTitle}
-              onChange={(e) => setNewListTitle(e.target.value)}
-            />
-            <button onClick={handleAddList}>+ Add List</button>
+              <button onClick={handleAddList}>+ Add List</button>
+            </div>
           </div>
-        </div>
-      </DndContext>
+        </DndContext>
+      </main>
     </div>
   )
 }
