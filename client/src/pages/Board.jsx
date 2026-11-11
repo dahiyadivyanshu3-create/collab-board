@@ -4,7 +4,7 @@ import axios from 'axios'
 import { io } from 'socket.io-client'
 import { DndContext, closestCenter } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus, X } from 'lucide-react'
 
 function DraggableCard({ card }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -19,8 +19,9 @@ function DraggableCard({ card }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative mb-2 cursor-grab rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 shadow-sm ${isDragging ? 'z-50 opacity-80 shadow-lg ring-2 ring-indigo-300' : 'hover:shadow-md'
-        }`}
+      className={`relative mb-2 cursor-grab rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 shadow-sm ${
+        isDragging ? 'z-50 opacity-80 shadow-lg ring-2 ring-indigo-300' : 'hover:shadow-md'
+      }`}
       {...listeners}
       {...attributes}
     >
@@ -28,7 +29,6 @@ function DraggableCard({ card }) {
     </div>
   )
 }
-
 
 function DroppableList({ list, count, children }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -38,8 +38,9 @@ function DroppableList({ list, count, children }) {
   return (
     <div
       ref={setNodeRef}
-      className={`w-72 shrink-0 rounded-xl p-3 transition-colors ${isOver ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'bg-gray-100'
-        }`}
+      className={`w-72 shrink-0 rounded-xl p-3 transition-colors ${
+        isOver ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'bg-gray-100'
+      }`}
     >
       <div className="mb-3 flex items-center justify-between px-1">
         <h3 className="text-sm font-semibold text-gray-800">{list.title}</h3>
@@ -60,6 +61,8 @@ function Board() {
   const [cardsByList, setCardsByList] = useState({})
   const [newCardText, setNewCardText] = useState({})
   const [newListTitle, setNewListTitle] = useState('')
+  const [activeCardList, setActiveCardList] = useState(null)
+  const [showListForm, setShowListForm] = useState(false)
 
   const token = localStorage.getItem('token')
   const socketRef = useRef(null)
@@ -132,6 +135,7 @@ function Board() {
         { headers: { Authorization: token } }
       )
       setNewListTitle('')
+      setShowListForm(false)
       fetchLists()
     } catch (error) {
       console.log('Error adding list:', error)
@@ -153,6 +157,16 @@ function Board() {
     } catch (error) {
       console.log('Error adding card:', error)
     }
+  }
+
+  const closeCardForm = (listId) => {
+    setActiveCardList(null)
+    setNewCardText({ ...newCardText, [listId]: '' })
+  }
+
+  const closeListForm = () => {
+    setShowListForm(false)
+    setNewListTitle('')
   }
 
   const handleDragEnd = async (event) => {
@@ -196,48 +210,109 @@ function Board() {
       <main className="p-6">
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <div className="flex items-start gap-4 overflow-x-auto pb-4">
-            {lists.map((list) => (
-              <DroppableList
-                key={list._id}
-                list={list}
-                count={(cardsByList[list._id] || []).length}
-              >
-                {cardsByList[list._id] &&
-                  cardsByList[list._id].map((card) => (
-                    <DraggableCard key={card._id} card={card} />
-                  ))}
+            {lists.map((list) => {
+              const cards = cardsByList[list._id]
 
-                <input
-                  type="text"
-                  placeholder="New card text"
-                  value={newCardText[list._id] || ''}
-                  onChange={(e) =>
-                    setNewCardText({ ...newCardText, [list._id]: e.target.value })
-                  }
-                  style={{
-                    width: '100%',
-                    padding: '6px',
-                    marginTop: '6px',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <button
-                  onClick={() => handleAddCard(list._id)}
-                  style={{ marginTop: '6px', width: '100%' }}
+              return (
+                <DroppableList
+                  key={list._id}
+                  list={list}
+                  count={(cards || []).length}
                 >
-                  + Add Card
-                </button>
-              </DroppableList>
-            ))}
+                  {cards && cards.length === 0 && (
+                    <p className="mb-2 px-1 py-2 text-center text-xs text-gray-400">
+                      No cards yet
+                    </p>
+                  )}
 
-            <div className="shrink-0 p-2.5">
-              <input
-                type="text"
-                placeholder="New list title"
-                value={newListTitle}
-                onChange={(e) => setNewListTitle(e.target.value)}
-              />
-              <button onClick={handleAddList}>+ Add List</button>
+                  {cards &&
+                    cards.map((card) => <DraggableCard key={card._id} card={card} />)}
+
+                  {activeCardList === list._id ? (
+                    <div>
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Card title"
+                        value={newCardText[list._id] || ''}
+                        onChange={(e) =>
+                          setNewCardText({ ...newCardText, [list._id]: e.target.value })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddCard(list._id)
+                          if (e.key === 'Escape') closeCardForm(list._id)
+                        }}
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          onClick={() => handleAddCard(list._id)}
+                          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                        >
+                          Add card
+                        </button>
+                        <button
+                          onClick={() => closeCardForm(list._id)}
+                          aria-label="Cancel"
+                          className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setActiveCardList(list._id)}
+                      className="flex w-full items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-200 transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add card
+                    </button>
+                  )}
+                </DroppableList>
+              )
+            })}
+
+            <div className="w-72 shrink-0">
+              {showListForm ? (
+                <div className="rounded-xl bg-gray-100 p-3">
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="List name"
+                    value={newListTitle}
+                    onChange={(e) => setNewListTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddList()
+                      if (e.key === 'Escape') closeListForm()
+                    }}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      onClick={handleAddList}
+                      className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                    >
+                      Add list
+                    </button>
+                    <button
+                      onClick={closeListForm}
+                      aria-label="Cancel"
+                      className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowListForm(true)}
+                  className="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add list
+                </button>
+              )}
             </div>
           </div>
         </DndContext>
