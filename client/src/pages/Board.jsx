@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api'
 import { io } from 'socket.io-client'
 import { DndContext, closestCenter } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
@@ -64,7 +64,7 @@ function Board() {
   const [activeCardList, setActiveCardList] = useState(null)
   const [showListForm, setShowListForm] = useState(false)
 
-  const token = localStorage.getItem('token')
+ 
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -85,79 +85,62 @@ function Board() {
     }
   }, [id])
 
-  const fetchBoard = async () => {
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/boards/${id}`,
-        { headers: { Authorization: token } }
-      )
-      setBoard(response.data)
-    } catch (error) {
-      console.log('Error fetching board:', error)
-    }
+ const fetchBoard = async () => {
+  try {
+    const response = await api.get(`/api/boards/${id}`)
+    setBoard(response.data)
+  } catch (error) {
+    console.log('Error fetching board:', error)
   }
+}
 
-  const fetchLists = async () => {
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/lists/${id}`,
-        { headers: { Authorization: token } }
-      )
-      setLists(response.data)
+const fetchLists = async () => {
+  try {
+    const response = await api.get(`/api/lists/${id}`)
+    setLists(response.data)
 
-      response.data.forEach((list) => {
-        fetchCards(list._id)
-      })
-    } catch (error) {
-      console.log('Error fetching lists:', error)
-    }
+    response.data.forEach((list) => {
+      fetchCards(list._id)
+    })
+  } catch (error) {
+    console.log('Error fetching lists:', error)
   }
+}
 
-  const fetchCards = async (listId) => {
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/cards/${listId}`,
-        { headers: { Authorization: token } }
-      )
-      setCardsByList((prev) => ({ ...prev, [listId]: response.data }))
-    } catch (error) {
-      console.log('Error fetching cards:', error)
-    }
+const fetchCards = async (listId) => {
+  try {
+    const response = await api.get(`/api/cards/${listId}`)
+    setCardsByList((prev) => ({ ...prev, [listId]: response.data }))
+  } catch (error) {
+    console.log('Error fetching cards:', error)
   }
+}
 
-  const handleAddList = async () => {
-    if (newListTitle.trim() === '') return
+const handleAddList = async () => {
+  if (newListTitle.trim() === '') return
 
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/lists`,
-        { title: newListTitle, board: id },
-        { headers: { Authorization: token } }
-      )
-      setNewListTitle('')
-      setShowListForm(false)
-      fetchLists()
-    } catch (error) {
-      console.log('Error adding list:', error)
-    }
+  try {
+    await api.post('/api/lists', { title: newListTitle, board: id })
+    setNewListTitle('')
+    setShowListForm(false)
+    fetchLists()
+  } catch (error) {
+    console.log('Error adding list:', error)
   }
+}
 
-  const handleAddCard = async (listId) => {
-    const text = newCardText[listId]
-    if (!text || text.trim() === '') return
+const handleAddCard = async (listId) => {
+  const text = newCardText[listId]
+  if (!text || text.trim() === '') return
 
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/cards`,
-        { text, list: listId },
-        { headers: { Authorization: token } }
-      )
-      setNewCardText({ ...newCardText, [listId]: '' })
-      fetchCards(listId)
-    } catch (error) {
-      console.log('Error adding card:', error)
-    }
+  try {
+    await api.post('/api/cards', { text, list: listId })
+    setNewCardText({ ...newCardText, [listId]: '' })
+    fetchCards(listId)
+  } catch (error) {
+    console.log('Error adding card:', error)
   }
+}
 
   const closeCardForm = (listId) => {
     setActiveCardList(null)
@@ -170,24 +153,20 @@ function Board() {
   }
 
   const handleDragEnd = async (event) => {
-    const { active, over } = event
+  const { active, over } = event
 
-    if (!over) return
+  if (!over) return
 
-    const cardId = active.id
-    const newListId = over.id
+  const cardId = active.id
+  const newListId = over.id
 
-    try {
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/cards/${cardId}`,
-        { list: newListId, boardId: id },
-        { headers: { Authorization: token } }
-      )
-      fetchLists()
-    } catch (error) {
-      console.log('Error moving card:', error)
-    }
+  try {
+    await api.put(`/api/cards/${cardId}`, { list: newListId, boardId: id })
+    fetchLists()
+  } catch (error) {
+    console.log('Error moving card:', error)
   }
+}
 
   return (
     <div className="min-h-screen bg-gray-50">
