@@ -17,6 +17,10 @@ router.post('/', authMiddleware, requireBoardAccess(boardIdFromBody('board')), a
 
     const newList = new List({ title, board: req.board._id })
     const savedList = await newList.save()
+
+    // Board ke baaki users ko live update
+    req.app.get('io').to(String(req.board._id)).emit('cardUpdated')
+
     res.status(201).json(savedList)
   } catch (error) {
     console.error(error)

@@ -6,6 +6,7 @@ import { DndContext, closestCenter } from '@dnd-kit/core'
 import DraggableCard from '../components/DraggableCard'
 import DroppableList from '../components/DroppableList'
 import { ArrowLeft, Plus, X } from 'lucide-react'
+import InviteMembers from '../components/InviteMembers'
 
 
 function Board() {
@@ -137,6 +138,18 @@ const handleAddCard = async (listId) => {
           <h1 className="text-lg font-semibold text-gray-900">
             {board ? board.title : 'Board'}
           </h1>
+
+          {board && (
+  <div className="ml-auto">
+    <InviteMembers
+      boardId={id}
+      isOwner={board.isOwner}
+      owner={board.owner}
+      members={board.members}
+      onInvited={fetchBoard}
+    />
+  </div>
+)}
         </div>
       </header>
 

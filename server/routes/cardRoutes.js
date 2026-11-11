@@ -23,6 +23,10 @@ router.post(
 
       const newCard = new Card({ text, list: req.body.list })
       const savedCard = await newCard.save()
+
+      // Board ke baaki users ko live update
+      req.app.get('io').to(String(req.board._id)).emit('cardUpdated')
+
       res.status(201).json(savedCard)
     } catch (error) {
       console.error(error)

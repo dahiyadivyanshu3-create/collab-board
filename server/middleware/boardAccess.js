@@ -4,11 +4,13 @@ const List = require('../models/List')
 const Card = require('../models/Card')
 
 // Ek hi jagah jahan decide hota hai "ye user is board ko access kar sakta hai ya nahi".
-// Aage jab members add karoge, sirf yahi query badlegi:
-//   { _id: boardId, $or: [{ owner: userId }, { members: userId }] }
+// Board ka owner YA uske members, dono access kar sakte hain.
 async function findAccessibleBoard(boardId, userId) {
   if (!mongoose.isValidObjectId(boardId)) return null
-  return Board.findOne({ _id: boardId, owner: userId })
+  return Board.findOne({
+    _id: boardId,
+    $or: [{ owner: userId }, { members: userId }]
+  })
 }
 
 // getBoardId(req) wo board id return kare jiske andar ye request kaam kar rahi hai.
