@@ -34,7 +34,7 @@ function Signup() {
       if (!err.response) {
         setError('Cannot reach the server. It may be waking up, try again in a minute.')
       } else {
-        setError('Signup failed. This email may already be registered.')
+        setError(err.response.data.error || 'Signup failed.')
       }
     } finally {
       setLoading(false)

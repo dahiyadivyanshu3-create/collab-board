@@ -2,43 +2,36 @@ const express = require('express')
 const router = express.Router()
 const Board = require('../models/Board')
 const authMiddleware = require('../middleware/authMiddleware')
-router.post('/',authMiddleware, async (req, res) => {
+const { requireBoardAccess, boardIdFromParam } = require('../middleware/boardAccess')
+
+router.post('/', authMiddleware, async (req, res) => {
   try {
-    const newBoard = new Board({
-      title: req.body.title,
-      owner: req.userId
-    })
-
-    
-
-    const savedBoard = await newBoard.save()
-    res.json(savedBoard)
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-})
-
-router.get('/',authMiddleware, async (req, res) => {
-  try {
-    const boards = await Board.find({owner:req.userId})
-    res.json(boards)
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-})
-
-router.get('/:id', authMiddleware, async (req, res) => {
-  try {
-    const board = await Board.findOne({ _id: req.params.id, owner: req.userId })
-
-    if (!board) {
-      return res.status(404).json({ error: 'Board not found' })
+    const title = typeof req.body.title === 'string' ? req.body.title.trim() : ''
+    if (!title || title.length > 100) {
+      return res.status(400).json({ error: 'Title is required (max 100 characters)' })
     }
 
-    res.json(board)
+    const newBoard = new Board({ title, owner: req.userId })
+    const savedBoard = await newBoard.save()
+    res.status(201).json(savedBoard)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    console.error(error)
+    res.status(500).json({ error: 'Server error' })
   }
+})
+
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const boards = await Board.find({ owner: req.userId })
+    res.json(boards)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
+router.get('/:id', authMiddleware, requireBoardAccess(boardIdFromParam('id')), (req, res) => {
+  res.json(req.board)
 })
 
 module.exports = router

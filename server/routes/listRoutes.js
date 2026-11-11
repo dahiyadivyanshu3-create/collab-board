@@ -2,27 +2,35 @@ const express = require('express')
 const router = express.Router()
 const List = require('../models/List')
 const authMiddleware = require('../middleware/authMiddleware')
+const {
+  requireBoardAccess,
+  boardIdFromParam,
+  boardIdFromBody
+} = require('../middleware/boardAccess')
 
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, requireBoardAccess(boardIdFromBody('board')), async (req, res) => {
   try {
-    const newList = new List({
-      title: req.body.title,
-      board: req.body.board
-    })
+    const title = typeof req.body.title === 'string' ? req.body.title.trim() : ''
+    if (!title || title.length > 100) {
+      return res.status(400).json({ error: 'Title is required (max 100 characters)' })
+    }
 
+    const newList = new List({ title, board: req.board._id })
     const savedList = await newList.save()
-    res.json(savedList)
+    res.status(201).json(savedList)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    console.error(error)
+    res.status(500).json({ error: 'Server error' })
   }
 })
 
-router.get('/:boardId', authMiddleware, async (req, res) => {
+router.get('/:boardId', authMiddleware, requireBoardAccess(boardIdFromParam('boardId')), async (req, res) => {
   try {
-    const lists = await List.find({ board: req.params.boardId })
+    const lists = await List.find({ board: req.board._id })
     res.json(lists)
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    console.error(error)
+    res.status(500).json({ error: 'Server error' })
   }
 })
 
