@@ -7,7 +7,7 @@ import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { ArrowLeft } from 'lucide-react'
 
 function DraggableCard({ card }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: card._id
   })
 
@@ -18,13 +18,9 @@ function DraggableCard({ card }) {
   return (
     <div
       ref={setNodeRef}
-      style={{
-        background: 'white',
-        padding: '8px',
-        marginBottom: '8px',
-        cursor: 'grab',
-        ...style
-      }}
+      style={style}
+      className={`relative mb-2 cursor-grab rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 shadow-sm ${isDragging ? 'z-50 opacity-80 shadow-lg ring-2 ring-indigo-300' : 'hover:shadow-md'
+        }`}
       {...listeners}
       {...attributes}
     >
@@ -33,23 +29,25 @@ function DraggableCard({ card }) {
   )
 }
 
-function DroppableList({ list, children }) {
-  const { setNodeRef } = useDroppable({
+
+function DroppableList({ list, count, children }) {
+  const { setNodeRef, isOver } = useDroppable({
     id: list._id
   })
 
   return (
     <div
       ref={setNodeRef}
-      style={{
-        background: '#eee',
-        padding: '10px',
-        width: '220px',
-        minHeight: '100px',
-        flexShrink: 0
-      }}
+      className={`w-72 shrink-0 rounded-xl p-3 transition-colors ${isOver ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'bg-gray-100'
+        }`}
     >
-      <h3>{list.title}</h3>
+      <div className="mb-3 flex items-center justify-between px-1">
+        <h3 className="text-sm font-semibold text-gray-800">{list.title}</h3>
+        <span className="rounded-full bg-white px-2 py-0.5 text-xs text-gray-500">
+          {count}
+        </span>
+      </div>
+
       {children}
     </div>
   )
@@ -199,7 +197,11 @@ function Board() {
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <div className="flex items-start gap-4 overflow-x-auto pb-4">
             {lists.map((list) => (
-              <DroppableList key={list._id} list={list}>
+              <DroppableList
+                key={list._id}
+                list={list}
+                count={(cardsByList[list._id] || []).length}
+              >
                 {cardsByList[list._id] &&
                   cardsByList[list._id].map((card) => (
                     <DraggableCard key={card._id} card={card} />
