@@ -1,25 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import api from '../api'
-import { io } from 'socket.io-client'
 import { DndContext, closestCenter } from '@dnd-kit/core'
+import { io } from 'socket.io-client'
+import { ArrowLeft } from 'lucide-react'
+import api from '../api'
 import DraggableCard from '../components/DraggableCard'
 import DroppableList from '../components/DroppableList'
-import { ArrowLeft, Plus, X } from 'lucide-react'
+import AddCardForm from '../components/AddCardForm'
+import AddListForm from '../components/AddListForm'
 import InviteMembers from '../components/InviteMembers'
-
 
 function Board() {
   const { id } = useParams()
   const [board, setBoard] = useState(null)
   const [lists, setLists] = useState([])
   const [cardsByList, setCardsByList] = useState({})
-  const [newCardText, setNewCardText] = useState({})
-  const [newListTitle, setNewListTitle] = useState('')
   const [activeCardList, setActiveCardList] = useState(null)
-  const [showListForm, setShowListForm] = useState(false)
 
- 
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -40,88 +37,74 @@ function Board() {
     }
   }, [id])
 
- const fetchBoard = async () => {
-  try {
-    const response = await api.get(`/api/boards/${id}`)
-    setBoard(response.data)
-  } catch (error) {
-    console.log('Error fetching board:', error)
-  }
-}
-
-const fetchLists = async () => {
-  try {
-    const response = await api.get(`/api/lists/${id}`)
-    setLists(response.data)
-
-    response.data.forEach((list) => {
-      fetchCards(list._id)
-    })
-  } catch (error) {
-    console.log('Error fetching lists:', error)
-  }
-}
-
-const fetchCards = async (listId) => {
-  try {
-    const response = await api.get(`/api/cards/${listId}`)
-    setCardsByList((prev) => ({ ...prev, [listId]: response.data }))
-  } catch (error) {
-    console.log('Error fetching cards:', error)
-  }
-}
-
-const handleAddList = async () => {
-  if (newListTitle.trim() === '') return
-
-  try {
-    await api.post('/api/lists', { title: newListTitle, board: id })
-    setNewListTitle('')
-    setShowListForm(false)
-    fetchLists()
-  } catch (error) {
-    console.log('Error adding list:', error)
-  }
-}
-
-const handleAddCard = async (listId) => {
-  const text = newCardText[listId]
-  if (!text || text.trim() === '') return
-
-  try {
-    await api.post('/api/cards', { text, list: listId })
-    setNewCardText({ ...newCardText, [listId]: '' })
-    fetchCards(listId)
-  } catch (error) {
-    console.log('Error adding card:', error)
-  }
-}
-
-  const closeCardForm = (listId) => {
-    setActiveCardList(null)
-    setNewCardText({ ...newCardText, [listId]: '' })
+  const fetchBoard = async () => {
+    try {
+      const response = await api.get(`/api/boards/${id}`)
+      setBoard(response.data)
+    } catch (error) {
+      console.log('Error fetching board:', error)
+    }
   }
 
-  const closeListForm = () => {
-    setShowListForm(false)
-    setNewListTitle('')
+  const fetchLists = async () => {
+    try {
+      const response = await api.get(`/api/lists/${id}`)
+      setLists(response.data)
+
+      response.data.forEach((list) => {
+        fetchCards(list._id)
+      })
+    } catch (error) {
+      console.log('Error fetching lists:', error)
+    }
+  }
+
+  const fetchCards = async (listId) => {
+    try {
+      const response = await api.get(`/api/cards/${listId}`)
+      setCardsByList((prev) => ({ ...prev, [listId]: response.data }))
+    } catch (error) {
+      console.log('Error fetching cards:', error)
+    }
+  }
+
+  const handleAddList = async (title) => {
+    try {
+      await api.post('/api/lists', { title, board: id })
+      fetchLists()
+      return true
+    } catch (error) {
+      console.log('Error adding list:', error)
+      return false
+    }
+  }
+
+  const handleAddCard = async (listId, text) => {
+    try {
+      await api.post('/api/cards', { text, list: listId })
+      fetchCards(listId)
+      return true
+    } catch (error) {
+      console.log('Error adding card:', error)
+      return false
+    }
   }
 
   const handleDragEnd = async (event) => {
-  const { active, over } = event
+    const { active, over } = event
 
-  if (!over) return
+    if (!over) return
 
-  const cardId = active.id
-  const newListId = over.id
+    const cardId = active.id
+    const newListId = over.id
 
-  try {
-    await api.put(`/api/cards/${cardId}`, { list: newListId, boardId: id })
-    fetchLists()
-  } catch (error) {
-    console.log('Error moving card:', error)
+    try {
+      await api.put(`/api/cards/${cardId}`, { list: newListId, boardId: id })
+      fetchLists()
+    } catch (error) {
+      console.log('Error moving card:', error)
+    }
   }
-}
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -139,7 +122,7 @@ const handleAddCard = async (listId) => {
             {board ? board.title : 'Board'}
           </h1>
 
-          {board && (
+{board && (
   <div className="ml-auto">
     <InviteMembers
       boardId={id}
@@ -150,6 +133,7 @@ const handleAddCard = async (listId) => {
     />
   </div>
 )}
+
         </div>
       </header>
 
@@ -174,91 +158,18 @@ const handleAddCard = async (listId) => {
                   {cards &&
                     cards.map((card) => <DraggableCard key={card._id} card={card} />)}
 
-                  {activeCardList === list._id ? (
-                    <div>
-                      <input
-                        autoFocus
-                        type="text"
-                        placeholder="Card title"
-                        value={newCardText[list._id] || ''}
-                        onChange={(e) =>
-                          setNewCardText({ ...newCardText, [list._id]: e.target.value })
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleAddCard(list._id)
-                          if (e.key === 'Escape') closeCardForm(list._id)
-                        }}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                      <div className="mt-2 flex items-center gap-2">
-                        <button
-                          onClick={() => handleAddCard(list._id)}
-                          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
-                        >
-                          Add card
-                        </button>
-                        <button
-                          onClick={() => closeCardForm(list._id)}
-                          aria-label="Cancel"
-                          className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 transition-colors"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setActiveCardList(list._id)}
-                      className="flex w-full items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-200 transition-colors"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add card
-                    </button>
-                  )}
+                  <AddCardForm
+                    isOpen={activeCardList === list._id}
+                    onOpen={() => setActiveCardList(list._id)}
+                    onClose={() => setActiveCardList(null)}
+                    onAdd={(text) => handleAddCard(list._id, text)}
+                  />
                 </DroppableList>
               )
             })}
 
             <div className="w-72 shrink-0">
-              {showListForm ? (
-                <div className="rounded-xl bg-gray-100 p-3">
-                  <input
-                    autoFocus
-                    type="text"
-                    placeholder="List name"
-                    value={newListTitle}
-                    onChange={(e) => setNewListTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAddList()
-                      if (e.key === 'Escape') closeListForm()
-                    }}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <div className="mt-2 flex items-center gap-2">
-                    <button
-                      onClick={handleAddList}
-                      className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
-                    >
-                      Add list
-                    </button>
-                    <button
-                      onClick={closeListForm}
-                      aria-label="Cancel"
-                      className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowListForm(true)}
-                  className="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add list
-                </button>
-              )}
+              <AddListForm onAdd={handleAddList} />
             </div>
           </div>
         </DndContext>
