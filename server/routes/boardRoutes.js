@@ -2,6 +2,8 @@ const express = require('express')
 const router = express.Router()
 const Board = require('../models/Board')
 const User = require('../models/User')
+const List = require('../models/List')
+const Card = require('../models/Card')
 const authMiddleware = require('../middleware/authMiddleware')
 const { requireBoardAccess, boardIdFromParam } = require('../middleware/boardAccess')
 
@@ -77,6 +79,29 @@ router.post('/:id/members', authMiddleware, requireBoardAccess(boardIdFromParam(
 
     await Board.updateOne({ _id: req.board._id }, { $addToSet: { members: user._id } })
     res.status(201).json({ message: 'Member added' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+// Board deletion is restricted to the owner. All associated lists and cards are cleaned up as part of the process.
+
+// Keep the board deletion as the last step. If any child resource fails to delete, the board remains intact so the cleanup can be retried later.
+
+router.delete('/:id', authMiddleware, requireBoardAccess(boardIdFromParam('id')), async (req, res) => {
+  try {
+    if (String(req.board.owner) !== String(req.userId)) {
+      return res.status(403).json({ error: 'Only the board owner can delete this board' })
+    }
+
+    const lists = await List.find({ board: req.board._id })
+    const listIds = lists.map((list) => list._id)
+
+    await Card.deleteMany({ list: { $in: listIds } })
+    await List.deleteMany({ board: req.board._id })
+    await Board.deleteOne({ _id: req.board._id })
+
+    res.json({ message: 'Board deleted' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Server error' })

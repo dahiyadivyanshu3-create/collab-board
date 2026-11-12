@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { LayoutDashboard, Plus, LogOut, Users } from 'lucide-react'
+import { LayoutDashboard, Plus, LogOut, Users, Trash2 } from 'lucide-react'
+
 
 // Har board card ke upar ki rangin patti
 const bannerColors = [
@@ -72,6 +73,24 @@ function Dashboard() {
       fetchBoards()
     } catch (error) {
       console.log('Error creating board:', error)
+    }
+  }
+
+  const handleDelete = async (board) => {
+    const ok = window.confirm(
+      `Delete "${board.title}"? Its lists and cards will be deleted too. This cannot be undone.`
+    )
+    if (!ok) return
+
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_API_URL}/api/boards/${board._id}`,
+        { headers: { Authorization: token } }
+      )
+      fetchBoards()
+    } catch (error) {
+      console.log('Error deleting board:', error)
+      window.alert('Could not delete the board. Try again.')
     }
   }
 
@@ -172,11 +191,26 @@ function Dashboard() {
                 <Link
                   key={board._id}
                   to={`/board/${board._id}`}
-                  className="flex h-36 flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition duration-150 hover:-translate-y-0.5 hover:shadow-md"
+                  className="group flex h-36 flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition duration-150 hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div
                     className={`relative h-14 bg-linear-to-r ${bannerColors[index % bannerColors.length]}`}
                   >
+
+                    {isOwner && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleDelete(board)
+                        }}
+                        aria-label={`Delete ${board.title}`}
+                        className="absolute left-2 top-2 rounded-lg bg-white/80 p-1.5 text-gray-600 transition hover:bg-white hover:text-red-600 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+
                     {userId && (
                       <span className="absolute right-2 top-2 rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-gray-700">
                         {isOwner ? 'Owner' : 'Shared'}
