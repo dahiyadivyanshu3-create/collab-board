@@ -83,5 +83,23 @@ router.put(
     }
   }
 )
+// Board ka koi bhi member card delete kar sakta hai
+router.delete(
+  '/:cardId',
+  authMiddleware,
+  requireBoardAccess(boardIdOfCard((req) => req.params.cardId)),
+  async (req, res) => {
+    try {
+      await Card.deleteOne({ _id: req.params.cardId })
+
+      req.app.get('io').to(String(req.board._id)).emit('cardUpdated')
+
+      res.json({ message: 'Card deleted' })
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: 'Server error' })
+    }
+  }
+)
 
 module.exports = router

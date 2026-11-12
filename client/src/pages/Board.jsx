@@ -90,6 +90,29 @@ function Board() {
     }
   }
 
+  const handleDeleteCard = async (cardId) => {
+    try {
+      await api.delete(`/api/cards/${cardId}`)
+      fetchLists()
+    } catch (error) {
+      console.log('Error deleting card:', error)
+    }
+  }
+
+  const handleDeleteList = async (list) => {
+    const count = (cardsByList[list._id] || []).length
+    const extra = count > 0 ? ` and its ${count} card${count === 1 ? '' : 's'}` : ''
+    const ok = window.confirm(`Delete list "${list.title}"${extra}? This cannot be undone.`)
+    if (!ok) return
+
+    try {
+      await api.delete(`/api/lists/${list._id}`)
+      fetchLists()
+    } catch (error) {
+      console.log('Error deleting list:', error)
+    }
+  }
+
   const handleDragEnd = async (event) => {
     const { active, over } = event
 
@@ -107,7 +130,7 @@ function Board() {
   }
 
   return (
-  <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-sky-50">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-sky-50">
       <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/80 backdrop-blur">
         <div className="flex items-center gap-4 px-6 py-3">
           <Link
@@ -122,17 +145,17 @@ function Board() {
             {board ? board.title : 'Board'}
           </h1>
 
-{board && (
-  <div className="ml-auto">
-    <InviteMembers
-      boardId={id}
-      isOwner={board.isOwner}
-      owner={board.owner}
-      members={board.members}
-      onInvited={fetchBoard}
-    />
-  </div>
-)}
+          {board && (
+            <div className="ml-auto">
+              <InviteMembers
+                boardId={id}
+                isOwner={board.isOwner}
+                owner={board.owner}
+                members={board.members}
+                onInvited={fetchBoard}
+              />
+            </div>
+          )}
 
         </div>
       </header>
@@ -148,6 +171,7 @@ function Board() {
                   key={list._id}
                   list={list}
                   count={(cards || []).length}
+                  onDelete={() => handleDeleteList(list)}
                 >
                   {cards && cards.length === 0 && (
                     <p className="mb-2 px-1 py-2 text-center text-xs text-gray-400">
@@ -156,7 +180,13 @@ function Board() {
                   )}
 
                   {cards &&
-                    cards.map((card) => <DraggableCard key={card._id} card={card} />)}
+                    cards.map((card) => (
+                      <DraggableCard
+                        key={card._id}
+                        card={card}
+                        onDelete={handleDeleteCard}
+                      />
+                    ))}
 
                   <AddCardForm
                     isOpen={activeCardList === list._id}

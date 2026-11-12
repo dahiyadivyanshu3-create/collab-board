@@ -1,11 +1,13 @@
 const express = require('express')
 const router = express.Router()
 const List = require('../models/List')
+const Card = require('../models/Card')
 const authMiddleware = require('../middleware/authMiddleware')
 const {
   requireBoardAccess,
   boardIdFromParam,
-  boardIdFromBody
+  boardIdFromBody,
+  boardIdOfList
 } = require('../middleware/boardAccess')
 
 router.post('/', authMiddleware, requireBoardAccess(boardIdFromBody('board')), async (req, res) => {
@@ -37,5 +39,27 @@ router.get('/:boardId', authMiddleware, requireBoardAccess(boardIdFromParam('boa
     res.status(500).json({ error: 'Server error' })
   }
 })
+
+// List deletion is allowed for all board members. The associated cards are cleaned up automatically.
+
+// Keep list deletion as the final step. This helps avoid losing the list if card cleanup fails midway, making it easier to retry later.
+router.delete(
+  '/:listId',
+  authMiddleware,
+  requireBoardAccess(boardIdOfList((req) => req.params.listId)),
+  async (req, res) => {
+    try {
+      await Card.deleteMany({ list: req.params.listId })
+      await List.deleteOne({ _id: req.params.listId })
+
+      req.app.get('io').to(String(req.board._id)).emit('cardUpdated')
+
+      res.json({ message: 'List deleted' })
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: 'Server error' })
+    }
+  }
+)
 
 module.exports = router
