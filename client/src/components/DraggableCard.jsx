@@ -13,8 +13,8 @@ function DraggableCard({ card }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative mb-2 cursor-grab rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 shadow-sm ${
-        isDragging ? 'z-50 opacity-80 shadow-lg ring-2 ring-indigo-300' : 'hover:shadow-md'
+      className={`relative mb-2 cursor-grab select-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 shadow-sm ${
+        isDragging ? 'z-50 opacity-80 shadow-lg ring-2 ring-indigo-300' : 'hover:border-indigo-200 hover:shadow-md'
       }`}
       {...listeners}
       {...attributes}

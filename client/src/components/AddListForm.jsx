@@ -21,7 +21,9 @@ function AddListForm({ onAdd }) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+        className="flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-gray-300
+         bg-white/50 px-4 py-3 text-sm text-gray-500
+         hover:border-gray-400 hover:bg-white/80 hover:text-gray-700 transition-colors"
       >
         <Plus className="h-4 w-4" />
         Add list
@@ -30,7 +32,7 @@ function AddListForm({ onAdd }) {
   }
 
   return (
-    <div className="rounded-xl bg-gray-100 p-3">
+  <div className="rounded-xl bg-slate-100/80 p-3 ring-1 ring-slate-200">
       <input
         autoFocus
         type="text"

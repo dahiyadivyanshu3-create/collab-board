@@ -52,7 +52,7 @@ function AddCardForm({ isOpen, onOpen, onClose, onAdd }) {
         <button
           onClick={handleClose}
           aria-label="Cancel"
-          className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 transition-colors"
+          className="rounded-lg p-1.5 text-gray-500 hover:bg-white hover:text-gray-800 transition-colors"
         >
           <X className="h-4 w-4" />
         </button>

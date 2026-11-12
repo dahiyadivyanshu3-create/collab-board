@@ -2,6 +2,15 @@ import { useState } from 'react'
 import { UserPlus } from 'lucide-react'
 import api from '../api'
 
+// Har naam ko apna color milta hai (pehle alphabet se)
+const AVATAR_COLORS = [
+  'bg-indigo-100 text-indigo-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-sky-100 text-sky-700'
+]
+
 // Board ke upar right mein: members ke initials + (sirf owner ko) Invite button
 function InviteMembers({ boardId, isOwner, owner, members, onInvited }) {
   const [open, setOpen] = useState(false)
@@ -40,11 +49,12 @@ function InviteMembers({ boardId, isOwner, owner, members, onInvited }) {
   return (
     <div className="relative flex items-center gap-3">
       <div className="flex -space-x-2">
-        {people.map((person) => (
+        {people.map((person,index) => (
           <span
             key={person._id}
             title={person.name}
-            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-indigo-100 text-xs font-semibold text-indigo-700"
+className={`flex h-8 w-8 items-center justify-center rounded-full border-2
+   border-white text-xs font-semibold ${AVATAR_COLORS[index % AVATAR_COLORS.length]}`}
           >
             {person.name.charAt(0).toUpperCase()}
           </span>
